@@ -2,6 +2,8 @@
 
 Join the Google Early [Preview Program](https://forms.gle/DWYuEkLYePsFfCZ7A)
 
+Read this for details: https://github.com/explainers-by-googlers/prompt-api
+
 ## Overview
 
 This Next.js application demonstrates integration with Chrome's built-in AI capabilities using the experimental Prompt API. It provides a chat interface where users can interact with an AI model directly in their browser.
