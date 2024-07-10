@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Google Prompt API
 
-## Getting Started
+Join the Google Early [Preview Program](https://forms.gle/DWYuEkLYePsFfCZ7A)
 
-First, run the development server:
+## Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This Next.js application demonstrates integration with Chrome's built-in AI capabilities using the experimental Prompt API. It provides a chat interface where users can interact with an AI model directly in their browser.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Prerequisites
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- Node.js (v14 or later)
+- Google Chrome (version 127 or later, Canary or Dev channel recommended)
+- At least 22 GB of free storage space
+- GPU with at least 4 GB VRAM
+- Non-metered internet connection
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Chrome Setup
 
-## Learn More
+1. Download Chrome Dev or Canary channel
+2. Ensure Chrome version is 128.0.6545.0 or newer
+3. Set Chrome flags:
+   - Navigate to `chrome://flags/#optimization-guide-on-device-model`
+   - Set to "Enabled BypassPerfRequirement"
+   - Go to `chrome://flags/#prompt-api-for-gemini-nano`
+   - Set to "Enabled"
+   - Relaunch Chrome
 
-To learn more about Next.js, take a look at the following resources:
+## Verifying Gemini Nano Availability
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Open Chrome DevTools console
+2. Run: `await window.ai.canCreateTextSession();`
+   - If it returns "readily", you're set
+   - If not, run: `await window.ai.createTextSession();`
+3. Relaunch Chrome
+4. Go to `chrome://components`
+5. Check if Optimization Guide On Device Model is present with version ≥ 2024.5.21.1031
+   - If not, click "Check for update"
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Project Setup
 
-## Deploy on Vercel
+1. Clone the repository:
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev`
+4. Open `http://localhost:3000` in your Chrome browser
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Key Components
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- `AIStatus`: Displays the current status of the AI model
+- `ChatInterface`: Manages the chat session and message handling
+- `ChatArea`: Renders the chat messages
+- `MessageInput`: Handles user input for sending messages
+
+## Styling
+
+This project uses Tailwind CSS for styling. Custom styles can be added in `app/globals.css`.
+
+## Limitations and Notes
+
+- This app uses an experimental API and is for demonstration purposes only
+- The Prompt API is intended for local prototyping, not production use
+- AI functionality may not work in Incognito or Guest mode
+- The app currently only supports English (US) language
+
+## Troubleshooting
+
+If you encounter issues:
+
+- Verify Chrome flags are correctly set
+- Ensure Gemini Nano is downloaded (check `chrome://components`)
+- Confirm your device meets the hardware requirements
+- Try relaunching Chrome or clearing browser data
+
+## Feedback and Contributions
+
+We welcome feedback and contributions. Please open an issue or submit a pull request on our GitHub repository.
+
+## License
+
+MIT
+
+---
+
+This project is part of the Chrome Built-in AI Early Preview Program. For more information, please refer to the [https://forms.gle/DWYuEkLYePsFfCZ7A](official documentation).
