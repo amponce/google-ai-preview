@@ -12,3 +12,33 @@ body {
   color: rgb(var(--foreground-rgb));
   background: white;
 }
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px 0px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 10px 2px currentColor;
+  } 
+  100% {
+    box-shadow: 0 0 5px 0px currentColor;
+  }
+}
+
+.glow-green {
+  background-color: #11bc4a;
+  animation: glow 1.5s ease-in-out infinite;
+  color: #11bc4a;
+}
+
+.glow-red {
+  background-color: #FF4136;
+  animation: glow 1.5s ease-in-out infinite;
+  color: #FF4136;
+}
+
+.glow-gray {
+  background-color: #AAAAAA;
+  animation: glow 1.5s ease-in-out infinite;
+  color: #AAAAAA;
+}

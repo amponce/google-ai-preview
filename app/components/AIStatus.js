@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-export default function AIStatus() {
+const AIStatus = () => {
   const [status, setStatus] = useState("Checking AI availability...");
 
   useEffect(() => {
@@ -23,9 +23,25 @@ export default function AIStatus() {
     checkAI();
   }, []);
 
+  const getStatusColor = () => {
+    switch (status) {
+      case 'AI Ready':
+        return 'green';
+      case 'AI Not Available':
+        return 'red';
+      case 'AI Downloading':
+        return 'blue';
+      default:
+        return 'gray';
+    }
+  };
+
   return (
-    <div className="absolute top-2 right-2 p-2 bg-gray-700 rounded-lg text-sm">
-      {status}
+    <div className="absolute top-2 right-2 flex items-center space-x-2 bg-gray-700 p-2 rounded-lg">
+      <div className={`glow-${getStatusColor()} w-3 h-3 rounded-full`} />
+      <span className="text-white text-sm">{status}</span>
     </div>
   );
-}
+};
+
+export default AIStatus;
