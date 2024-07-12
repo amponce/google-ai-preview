@@ -9,24 +9,24 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="bg-gray-900 text-white">
+      <body className="bg-white">
         <div className="flex h-screen">
-          <aside className="w-64 bg-gray-800 p-5">
+          <aside className="w-64 bg-white border-r border-gray-200 p-5">
             <nav>
               <ul className="space-y-4">
-                <li className="text-gray-300 hover:text-white cursor-pointer">
+                <li className="text-gray-600 hover:text-gray-900 cursor-pointer">
                   Explore
                 </li>
-                <li className="text-gray-300 hover:text-white cursor-pointer">
+                <li className="text-gray-600 hover:text-gray-900 cursor-pointer">
                   Chatbot
                 </li>
-                <li className="text-gray-300 hover:text-white cursor-pointer">
+                <li className="text-gray-600 hover:text-gray-900 cursor-pointer">
                   Customize
                 </li>
               </ul>
             </nav>
           </aside>
-          <main className="flex-grow p-5 relative">
+          <main className="flex-grow relative">
             <AIStatus />
             {children}
           </main>

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import ChatArea from "./ChatArea";
-import MessageInput from "./MessageInput";
+import React, { useState, useEffect } from 'react';
+import { ChatArea } from './ChatArea';
+import { MessageInput } from './MessageInput';
 
-export default function ChatInterface() {
+
+const ChatInterface = () => {
   const [messages, setMessages] = useState([]);
   const [aiSession, setAiSession] = useState(null);
+  const [isAiTyping, setIsAiTyping] = useState(false);
 
   useEffect(() => {
     async function initAI() {
@@ -26,31 +28,36 @@ export default function ChatInterface() {
   }, []);
 
   const handleSendMessage = async (message) => {
-    setMessages((prev) => [...prev, { type: "user", content: message }]);
+    setMessages((prev) => [...prev, { type: 'user', content: message }]);
+    setIsAiTyping(true);
 
     if (aiSession) {
       try {
         const response = await aiSession.prompt(message);
-        setMessages((prev) => [...prev, { type: "ai", content: response }]);
+        setMessages((prev) => [...prev, { type: 'ai', content: response }]);
       } catch (error) {
         console.error("Error getting AI response:", error);
         setMessages((prev) => [
           ...prev,
-          { type: "ai", content: "Sorry, I encountered an error." },
+          { type: 'ai', content: "Sorry, I encountered an error." },
         ]);
       }
     } else {
       setMessages((prev) => [
         ...prev,
-        { type: "ai", content: "AI is not available at the moment." },
+        { type: 'ai', content: "AI is not available at the moment." },
       ]);
     }
+
+    setIsAiTyping(false);
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-gray-100">
       <ChatArea messages={messages} />
-      <MessageInput onSendMessage={handleSendMessage} />
+      <MessageInput onSendMessage={handleSendMessage} isAiTyping={isAiTyping} />
     </div>
   );
-}
+};
+
+export default ChatInterface;
