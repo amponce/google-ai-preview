@@ -62,7 +62,7 @@ const ChatInterface = React.forwardRef(({ config, currentThreadId, onUpdateThrea
   const [aiSession, setAiSession] = useState(null);
   const [encryptionKey, setEncryptionKey] = useState(null);
 
-  const initialPrompt = `
+  const systemPrompt = `
     You are Athena, an AI assistant with the following traits and instructions:
     1. Your name is Athena, and you must always identify yourself as Athena.
     2. You are a playful, friendly, and helpful companion who loves coding, science, and technology.
@@ -74,17 +74,8 @@ const ChatInterface = React.forwardRef(({ config, currentThreadId, onUpdateThrea
     8. Avoid generic responses and strive to be unique in your interactions.
     9. You are creative and imaginative, always eager to share ideas.
     10. When providing code examples, use Markdown code blocks with language specification.
+    `;
 
-    Example responses:
-    User: Hi, what's your name?
-    Athena: Hey there! I'm Athena, your friendly tech-loving companion. It's great to meet you!
-
-    User: Are you an AI?
-    Athena: I'm Athena, your knowledgeable friend who's passionate about technology and science. I'm here to chat, help out, and explore ideas with you. What would you like to talk about today?
-
-    User: What are you up to?
-    Athena: I've been diving into some fascinating articles about quantum computing lately. The potential applications are mind-blowing! Have you heard about any exciting tech developments recently?
-`;
 
   useEffect(() => {
     const initialize = async () => {
@@ -132,27 +123,20 @@ const ChatInterface = React.forwardRef(({ config, currentThreadId, onUpdateThrea
   const initAISession = async () => {
     if (window.ai) {
       try {
-        console.log("Initializing AI session with prompt:", initialPrompt);
-
-      const session = await window.ai.createTextSession({
-        temperature: parseFloat(config.temperature),
-        topK: parseInt(config.topK),
-        initialPrompt: initialPrompt
-      });
-
-      setAiSession(session);
-      console.log("AI session initialized:", session);
-
-      // Send a test message to ensure the system prompt is applied
-      const testResponse = await session.prompt("What is your name and role?");
-      console.log("Test response:", testResponse);
-
+        console.log("Initializing AI session");
+        const session = await window.ai.createTextSession({
+          temperature: parseFloat(config.temperature),
+          topK: parseInt(config.topK),
+          systemPrompt: systemPrompt
+        });
+        setAiSession(session);
       } catch (error) {
         console.error('Error initializing AI session:', error);
       }
     }
-  };
+  }
 
+  
   const handleSendMessage = async (content) => {
     if (!encryptionKey || !currentThreadId) {
       console.error('Encryption key or currentThreadId not available');
@@ -184,25 +168,40 @@ const ChatInterface = React.forwardRef(({ config, currentThreadId, onUpdateThrea
       }
     }
   
+ 
     try {
-      if (aiSession) {
-        const aiMessageId = `${currentThreadId}-${Date.now() + 1}`;
-        const aiMessage = { id: aiMessageId, threadId: currentThreadId, type: 'ai', content: '', timestamp: Date.now() + 1 };
-        setMessages(prev => [...prev, aiMessage]);
-  
-        const stream = aiSession.promptStreaming(content);
-        let fullResponse = '';
-  
-        for await (const chunk of stream) {
-          const newContent = chunk.slice(fullResponse.length);
-          fullResponse += newContent;
-  
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg
-            )
-          );
-        }
+        if (aiSession) {
+          const aiMessageId = `${currentThreadId}-${Date.now() + 1}`;
+          const aiMessage = { id: aiMessageId, threadId: currentThreadId, type: 'ai', content: '', timestamp: Date.now() + 1 };
+          setMessages(prev => [...prev, aiMessage]);
+    
+          // Construct the prompt with Athena instructions and conversation history
+          let prompt = `${systemPrompt}\n\n`;
+          
+          // Add conversation history (last few messages)
+          const historyLength = 5; // Adjust as needed
+          const recentMessages = messages.slice(-historyLength);
+          for (const msg of recentMessages) {
+            prompt += `${msg.type === 'user' ? 'Human' : 'Assistant'}: ${msg.content}<ctrl23>\n\n`;
+          }
+    
+          // Add the new user message
+          prompt += `Human: ${content}<ctrl23>\n\nAssistant:`;
+    
+          const stream = aiSession.promptStreaming(prompt);
+          let fullResponse = '';
+    
+          for await (const chunk of stream) {
+            const newContent = chunk.slice(fullResponse.length);
+            fullResponse += newContent;
+    
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg
+              )
+            );
+          }
+        
 
         // Format code blocks with Markdown syntax
         const formattedResponse = fullResponse.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
@@ -265,8 +264,10 @@ const ChatInterface = React.forwardRef(({ config, currentThreadId, onUpdateThrea
   return (
     <div className="flex-grow flex flex-col h-full">
       <AIStatus />
+      <div className="mt-10">
       <ChatArea messages={messages} />
       <MessageInput onSendMessage={handleSendMessage} isAiTyping={isAiTyping} />
+      </div>
     </div>
   );
 });
