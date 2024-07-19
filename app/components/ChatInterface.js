@@ -129,17 +129,10 @@ const ChatInterface = React.forwardRef(
             const session = await window.ai.createTextSession({
               temperature: parseFloat(config.temperature),
               topK: parseInt(config.topK),
+              systemPrompt: systemPrompt,
             });
             setAiSession(session);
 
-            // Send the system prompt to initialize the session
-            const initResponse = await session.prompt(
-              systemPrompt +
-                "\n\nAthena: Hello! I'm Athena, your friendly AI assistant. How can I help you today?"
-            );
-            console.log("Initialization response:", initResponse);
-
-            // Add the initial message to the chat
             setMessages((prev) => [
               ...prev,
               {
@@ -147,7 +140,7 @@ const ChatInterface = React.forwardRef(
                 threadId: currentThreadId,
                 type: "ai",
                 content:
-                  "Hello! I'm Athena, your friendly AI assistant. How can I help you today?",
+                  "\n\n Hello! I'm Athena, your friendly AI assistant. How can I help you today?",
                 timestamp: Date.now(),
               },
             ]);
@@ -163,10 +156,8 @@ const ChatInterface = React.forwardRef(
     };
 
     const handleSendMessage = async (content) => {
-      if (!encryptionKey || !currentThreadId || !aiSession) {
-        console.error(
-          "Encryption key, currentThreadId, or AI session not available"
-        );
+      if (!encryptionKey || !currentThreadId) {
+        console.error("Encryption key or currentThreadId not available");
         return;
       }
 
@@ -204,61 +195,97 @@ const ChatInterface = React.forwardRef(
       }
 
       try {
-        const aiMessageId = `${currentThreadId}-${Date.now() + 1}`;
-        const aiMessage = {
-          id: aiMessageId,
-          threadId: currentThreadId,
-          type: "ai",
-          content: "",
-          timestamp: Date.now() + 1,
-        };
-        setMessages((prev) => [...prev, aiMessage]);
+        if (aiSession) {
+          const aiMessageId = `${currentThreadId}-${Date.now() + 1}`;
+          const aiMessage = {
+            id: aiMessageId,
+            threadId: currentThreadId,
+            type: "ai",
+            content: "",
+            timestamp: Date.now() + 1,
+          };
+          setMessages((prev) => [...prev, aiMessage]);
 
-        // Include a reminder of Athena's identity in each prompt
-        const prompt = `${systemPrompt}\n\nRemember, you are Athena, a friendly AI assistant with your own personality. Always respond as Athena would.\n\nHuman: ${content}\n\nAthena:`;
+          // Construct the prompt with Athena instructions and conversation history
+          let prompt = `${systemPrompt}\n\n`;
 
-        const stream = aiSession.promptStreaming(prompt);
-        let fullResponse = "";
+          // Add conversation history (last few messages)
+          const historyLength = 5; // Adjust as needed
+          const recentMessages = messages.slice(-historyLength);
+          for (const msg of recentMessages) {
+            prompt += `${msg.type === "user" ? "Human" : "Assistant"}: ${
+              msg.content
+            }<ctrl23>\n\n`;
+          }
 
-        for await (const chunk of stream) {
-          const newContent = chunk.slice(fullResponse.length);
-          fullResponse += newContent;
+          // Add the new user message
+          prompt += `Human: ${content}<ctrl23>\n\nAssistant:`;
 
+          const stream = aiSession.promptStreaming(prompt);
+          let fullResponse = "";
+          let previousLength = 0;
+
+          for await (const chunk of stream) {
+            const newContent = chunk.slice(previousLength);
+            console.log("Received chunk:", newContent);
+            fullResponse += newContent;
+            previousLength = fullResponse.length;
+
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg
+              )
+            );
+          }
+
+          // Final update to ensure the full response is captured
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg
             )
           );
-        }
 
-        // Format code blocks with Markdown syntax
-        const formattedResponse = fullResponse.replace(
-          /```(\w+)?\n([\s\S]*?)```/g,
-          (match, language, code) => {
-            return `\`\`\`${language || ""}\n${code.trim()}\n\`\`\``;
+          // Format code blocks with Markdown syntax
+          const formattedResponse = fullResponse.replace(
+            /```(\w+)?\n([\s\S]*?)```/g,
+            (match, language, code) => {
+              return `\`\`\`${language || ""}\n${code.trim()}\n\`\`\``;
+            }
+          );
+
+          if (config.storeChats && db) {
+            try {
+              const encryptedAiResponse = encryptMessage(
+                formattedResponse,
+                encryptionKey
+              );
+              const tx = db.transaction("messages", "readwrite");
+              const store = tx.objectStore("messages");
+              await store.add({
+                id: aiMessageId,
+                threadId: currentThreadId,
+                type: "ai",
+                content: encryptedAiResponse,
+                timestamp: Date.now() + 1,
+              });
+            } catch (error) {
+              console.error("Failed to store AI message:", error);
+            }
           }
-        );
-
-        if (config.storeChats && db) {
-          try {
-            const encryptedAiResponse = encryptMessage(
-              formattedResponse,
-              encryptionKey
-            );
-            const tx = db.transaction("messages", "readwrite");
-            const store = tx.objectStore("messages");
-            await store.add({
-              id: aiMessageId,
+          console.log("Received full AI response:", formattedResponse);
+        } else {
+          console.warn("AI session is not available");
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `${currentThreadId}-${Date.now() + 2}`,
               threadId: currentThreadId,
               type: "ai",
-              content: encryptedAiResponse,
-              timestamp: Date.now() + 1,
-            });
-          } catch (error) {
-            console.error("Failed to store AI message:", error);
-          }
+              content: "AI session is not available.",
+              timestamp: Date.now() + 2,
+            },
+          ]);
         }
-        console.log("Received full AI response:", formattedResponse);
       } catch (error) {
         console.error("Error in message handling:", error);
         setMessages((prev) => [
@@ -287,8 +314,6 @@ const ChatInterface = React.forwardRef(
         }
       }
       setMessages([]);
-      // Reinitialize the AI session to clear its context
-      await initAISession();
     };
 
     React.useImperativeHandle(ref, () => ({
